@@ -1,0 +1,17 @@
+#cloud-config
+coreos:
+  units:
+  - name: collector-container.service
+    command: start
+    content: |
+      [Unit]
+      Description=Collector
+      Requires=docker.service
+      After=docker.service
+      [Service]
+      Restart=always
+      ExecStart=/usr/bin/docker run --name collector -p 0.0.0.0:8082:8082 jspc/loadtest-collector --influx http://influx.jspc.pw:8086
+      ExecStop=/usr/bin/docker stop -t 2 collector
+      ExecStopPost=/usr/bin/docker rm -f collector
+      [Install]
+      WantedBy=default.target

@@ -1,0 +1,17 @@
+#cloud-config
+coreos:
+  units:
+  - name: collector-container.service
+    command: start
+    content: |
+      [Unit]
+      Description=Collector
+      Requires=docker.service
+      After=docker.service
+      [Service]
+      Restart=always
+      ExecStart=/usr/bin/docker run -v /data:/var/lib/influxdb --name influx -p 0.0.0.0:8086:8086 influxdb
+      ExecStop=/usr/bin/docker stop -t 2 influx
+      ExecStopPost=/usr/bin/docker rm -f influx
+      [Install]
+      WantedBy=default.target

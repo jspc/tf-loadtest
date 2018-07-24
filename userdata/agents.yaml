@@ -1,0 +1,17 @@
+#cloud-config
+coreos:
+  units:
+  - name: agent-container.service
+    command: start
+    content: |
+      [Unit]
+      Description=Agent
+      Requires=docker.service
+      After=docker.service
+      [Service]
+      Restart=always
+      ExecStart=/usr/bin/docker run --name agent -p 0.0.0.0:8081:8081 jspc/loadtest-agent --collector https://lb.jspc.pw/ --insecure
+      ExecStop=/usr/bin/docker stop -t 2 agent
+      ExecStopPost=/usr/bin/docker rm -f agent
+      [Install]
+      WantedBy=default.target
