@@ -7,6 +7,14 @@ resource "digitalocean_tag" "collector" {
   name = "collector"
 }
 
+resource "digitalocean_tag" "agent" {
+  name = "agent"
+}
+
+resource "digitalocean_tag" "influx" {
+  name = "influx"
+}
+
 resource "digitalocean_droplet" "agent" {
   name  = "${format("agent-%02d", count.index)}"
   count = 5
@@ -16,8 +24,8 @@ resource "digitalocean_droplet" "agent" {
   size   = "4gb"
 
   user_data = "${file("userdata/agents.yaml")}"
-
-  ssh_keys = ["${digitalocean_ssh_key.core.id}"]
+  ssh_keys  = ["${digitalocean_ssh_key.core.id}"]
+  tags      = ["${digitalocean_tag.agent.id}"]
 }
 
 resource "digitalocean_droplet" "collector" {
@@ -29,9 +37,8 @@ resource "digitalocean_droplet" "collector" {
   size   = "512mb"
 
   user_data = "${file("userdata/collectors.yaml")}"
-
-  ssh_keys = ["${digitalocean_ssh_key.core.id}"]
-  tags     = ["${digitalocean_tag.collector.id}"]
+  ssh_keys  = ["${digitalocean_ssh_key.core.id}"]
+  tags      = ["${digitalocean_tag.collector.id}"]
 }
 
 resource "digitalocean_droplet" "tick" {
@@ -42,8 +49,8 @@ resource "digitalocean_droplet" "tick" {
   size   = "2gb"
 
   user_data = "${file("userdata/tick.yaml")}"
-
-  ssh_keys = ["${digitalocean_ssh_key.core.id}"]
+  ssh_keys  = ["${digitalocean_ssh_key.core.id}"]
+  tags      = ["${digitalocean_tag.influx.id}"]
 }
 
 resource "digitalocean_record" "influx" {
