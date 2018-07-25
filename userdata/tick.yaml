@@ -1,11 +1,11 @@
 #cloud-config
 coreos:
   units:
-  - name: collector-container.service
+  - name: influx-container.service
     command: start
     content: |
       [Unit]
-      Description=Collector
+      Description=Influx
       Requires=docker.service
       After=docker.service
       [Service]
@@ -13,5 +13,35 @@ coreos:
       ExecStart=/usr/bin/docker run -v /data:/var/lib/influxdb --name influx -p 0.0.0.0:8086:8086 influxdb
       ExecStop=/usr/bin/docker stop -t 2 influx
       ExecStopPost=/usr/bin/docker rm -f influx
+      [Install]
+      WantedBy=default.target
+
+  - name: kapacitor-container.service
+    command: start
+    content: |
+      [Unit]
+      Description=Kapacitor
+      Requires=docker.service
+      After=docker.service
+      [Service]
+      Restart=always
+      ExecStart=/usr/bin/docker run --name kapacitor -e KAPACITOR_HOSTNAME=kapacitor -e KAPACITOR_INFLUXDB_0_URLS_0=http://localhost:8086 -p 0.0.0.0:9092:9092 kapacitor
+      ExecStop=/usr/bin/docker stop -t 2 kapacitor
+      ExecStopPost=/usr/bin/docker rm -f kapacitor
+      [Install]
+      WantedBy=default.target
+
+  - name: chronograf-container.service
+    command: start
+    content: |
+      [Unit]
+      Description=Chronograf
+      Requires=docker.service
+      After=docker.service
+      [Service]
+      Restart=always
+      ExecStart=/usr/bin/docker run --name chronograf -e INFLUXDB_URL=http://localhost:8086 -e KAPACITOR_URL=http://localhost:9092 -p 0.0.0.0:8888:8888 chronograf
+      ExecStop=/usr/bin/docker stop -t 2 chronograf
+      ExecStopPost=/usr/bin/docker rm -f chronograf
       [Install]
       WantedBy=default.target
