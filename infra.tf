@@ -21,7 +21,7 @@ resource "digitalocean_droplet" "agent" {
   image = "coreos-stable"
 
   region = "${var.region}"
-  size   = "4gb"
+  size   = "8gb"
 
   user_data = "${file("userdata/agents.yaml")}"
   ssh_keys  = ["${digitalocean_ssh_key.core.id}"]
@@ -34,7 +34,7 @@ resource "digitalocean_droplet" "collector" {
   image = "coreos-stable"
 
   region = "${var.region}"
-  size   = "512mb"
+  size   = "2gb"
 
   user_data = "${file("userdata/collectors.yaml")}"
   ssh_keys  = ["${digitalocean_ssh_key.core.id}"]
@@ -46,7 +46,7 @@ resource "digitalocean_droplet" "tick" {
   image = "coreos-stable"
 
   region = "${var.region}"
-  size   = "2gb"
+  size   = "4gb"
 
   user_data = "${file("userdata/tick.yaml")}"
   ssh_keys  = ["${digitalocean_ssh_key.core.id}"]
