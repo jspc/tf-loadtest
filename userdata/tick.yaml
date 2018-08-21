@@ -1,5 +1,8 @@
 #cloud-config
 coreos:
+  update:
+    reboot-strategy: off
+
   units:
   - name: influx-container.service
     command: start
@@ -25,7 +28,7 @@ coreos:
       After=docker.service
       [Service]
       Restart=always
-      ExecStart=/usr/bin/docker run --name kapacitor -e KAPACITOR_HOSTNAME=kapacitor -e KAPACITOR_INFLUXDB_0_URLS_0=http://localhost:8086 -p 0.0.0.0:9092:9092 kapacitor
+      ExecStart=/usr/bin/docker run --name kapacitor -e KAPACITOR_HOSTNAME=kapacitor -e KAPACITOR_INFLUXDB_0_URLS_0=http://influx.jspc.pw:8086 -p 0.0.0.0:9092:9092 kapacitor
       ExecStop=/usr/bin/docker stop -t 2 kapacitor
       ExecStopPost=/usr/bin/docker rm -f kapacitor
       [Install]
@@ -40,8 +43,25 @@ coreos:
       After=docker.service
       [Service]
       Restart=always
-      ExecStart=/usr/bin/docker run --name chronograf -e INFLUXDB_URL=http://localhost:8086 -e KAPACITOR_URL=http://localhost:9092 -p 0.0.0.0:8888:8888 chronograf
+      ExecStart=/usr/bin/docker run --name chronograf -e INFLUXDB_URL=http://influx.jspc.pw:8086 -e KAPACITOR_URL=http://influx.jspc.pw:9092 -p 0.0.0.0:8888:8888 chronograf
       ExecStop=/usr/bin/docker stop -t 2 chronograf
       ExecStopPost=/usr/bin/docker rm -f chronograf
       [Install]
       WantedBy=default.target
+
+  - name: telegraf-container.service
+    command: start
+    content: |
+      [Unit]
+      Description=Telegraf
+      Requires=docker.service
+      After=docker.service
+      [Service]
+      Restart=always
+      ExecStartPre=/usr/bin/wget https://gist.githubusercontent.com/jspc/c9f26eba3773496cdcb2d23259e217f9/raw/078025e1e862d2431c7096e3936f0a8c27be85a3/telegraf.conf -O /tmp/telegraf.conf
+      ExecStart=/usr/bin/docker run -v /tmp/telegraf.conf:/etc/telegraf/telegraf.conf:ro -h %H --name telegraf telegraf
+      ExecStop=/usr/bin/docker stop -t 2 telegraf
+      ExecStopPost=/usr/bin/docker rm -f telegraf
+      [Install]
+      WantedBy=default.target
+

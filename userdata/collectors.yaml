@@ -1,5 +1,8 @@
 #cloud-config
 coreos:
+  update:
+    reboot-strategy: off
+
   units:
   - name: collector-container.service
     command: start
@@ -10,8 +13,24 @@ coreos:
       After=docker.service
       [Service]
       Restart=always
-      ExecStart=/usr/bin/docker run --name collector -p 0.0.0.0:8082:8082 jspc/loadtest-collector --influx http://influx.jspc.pw:8086
+      ExecStart=/usr/bin/docker run --name collector -p 0.0.0.0:8082:8082 goload/collector --influx http://influx.jspc.pw:8086
       ExecStop=/usr/bin/docker stop -t 2 collector
       ExecStopPost=/usr/bin/docker rm -f collector
+      [Install]
+      WantedBy=default.target
+
+  - name: telegraf-container.service
+    command: start
+    content: |
+      [Unit]
+      Description=Telegraf
+      Requires=docker.service
+      After=docker.service
+      [Service]
+      Restart=always
+      ExecStartPre=/usr/bin/wget https://gist.githubusercontent.com/jspc/c9f26eba3773496cdcb2d23259e217f9/raw/db677a5b01b2f5da50e90a02a00951b180cebaf7/telegraf.conf -O /tmp/telegraf.conf
+      ExecStart=/usr/bin/docker run -v /tmp/telegraf.conf:/etc/telegraf/telegraf.conf:ro -h %H --name telegraf telegraf
+      ExecStop=/usr/bin/docker stop -t 2 telegraf
+      ExecStopPost=/usr/bin/docker rm -f telegraf
       [Install]
       WantedBy=default.target

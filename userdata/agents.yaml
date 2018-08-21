@@ -1,17 +1,46 @@
 #cloud-config
 coreos:
+  update:
+    reboot-strategy: off
+
   units:
+  - name: get-bin.service
+    command: start
+    content: |
+        [Unit]
+        Description=Gets binary
+
+        [Service]
+        Type=oneshot
+        RemainAfterExit=true
+        ExecStart=/usr/bin/wget -O /tmp/agent https://github.com/go-lo/agent/releases/download/v0.0.1-pprof/agent
+        ExecStart=/usr/bin/chmod +x /tmp/agent
+
   - name: agent-container.service
     command: start
     content: |
       [Unit]
       Description=Agent
+      Requires=get-bin.service
+      After=get-bin.service
+      [Service]
+      Restart=always
+      ExecStart=/tmp/agent --collector https://lb.jspc.pw/ --insecure
+      [Install]
+      WantedBy=default.target
+
+  - name: telegraf-container.service
+    command: start
+    content: |
+      [Unit]
+      Description=Telegraf
       Requires=docker.service
       After=docker.service
       [Service]
       Restart=always
-      ExecStart=/usr/bin/docker run --name agent -p 0.0.0.0:8081:8081 -v /collector-logs:/var/log/loadtest-agent jspc/loadtest-agent --collector https://lb.jspc.pw/ --insecure
-      ExecStop=/usr/bin/docker stop -t 2 agent
-      ExecStopPost=/usr/bin/docker rm -f agent
+      ExecStartPre=/usr/bin/wget https://gist.githubusercontent.com/jspc/c9f26eba3773496cdcb2d23259e217f9/raw/db677a5b01b2f5da50e90a02a00951b180cebaf7/telegraf.conf -O /tmp/telegraf.conf
+      ExecStart=/usr/bin/docker run -v /tmp/telegraf.conf:/etc/telegraf/telegraf.conf:ro -h %H --name telegraf telegraf
+      ExecStop=/usr/bin/docker stop -t 2 telegraf
+      ExecStopPost=/usr/bin/docker rm -f telegraf
       [Install]
       WantedBy=default.target
